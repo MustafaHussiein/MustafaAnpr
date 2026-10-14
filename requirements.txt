@@ -1,0 +1,21 @@
+# Core API
+fastapi==0.119.1
+uvicorn==0.38.0
+starlette==0.48.0
+pydantic==2.12.4
+python-multipart==0.0.20
+aiofiles==24.1.0
+orjson==3.11.3
+
+# Vision / ANPR
+# NOTE: no explicit opencv pin here on purpose. paddleocr pulls in
+# opencv-contrib-python==4.6.0.66 (a superset of opencv-python), which also
+# satisfies ultralytics' opencv-python>=4.6.0 requirement. Pinning our own
+# opencv-python-headless on top caused THREE different opencv wheels to be
+# installed at once, overwriting each other's files in site-packages/cv2.
+numpy==1.26.4
+ultralytics==8.3.213
+paddleocr==2.7.0.3
+
+# Paddle dependency
+paddlepaddle==2.6.2

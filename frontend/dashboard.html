@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AahaAnpr</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+:root {
+    --bg-dark: #1a1a1a;
+    --panel-border: #333;
+    --accent-yellow: #ffcc00;
+    --header-height: 50px;
+}
+
+* { box-sizing: border-box; }
+
+body.nvr-theme {
+    margin: 0; 
+    background: #000; 
+    color: white;
+    font-family: 'Segoe UI', Arial, sans-serif; 
+    height: 100vh; 
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.nvr-header {
+    height: var(--header-height); 
+    background: #111; 
+    display: flex; 
+    align-items: center;
+    justify-content: space-between; 
+    padding: 0 15px; 
+    border-bottom: 1px solid var(--panel-border);
+    flex-shrink: 0;
+}
+
+.brand { font-weight: bold; color: var(--accent-yellow); text-transform: uppercase; }
+
+.nvr-nav { display: flex; gap: 15px; }
+
+.nav-btn {
+    background: #222;
+    color: #888;
+    border: 1px solid #333;
+    padding: 8px 18px;
+    cursor: pointer;
+    font-size: 13px;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background: #333;
+    color: #fff;
+}
+
+.nav-btn.active {
+    background: #333;
+    color: var(--accent-yellow);
+    border-bottom: 2px solid var(--accent-yellow);
+    font-weight: bold;
+}
+
+.nvr-main { 
+    display: flex; 
+    flex-direction: column;
+    flex: 1; 
+    overflow: hidden;
+}
+
+/* CRITICAL: Hide all tabs by default */
+.tab-content {
+    display: none !important;
+}
+
+/* CRITICAL: Show only active tab */
+.tab-content.active {
+    display: flex !important;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    overflow: auto;
+}
+
+/* LIVE SECTION */
+.stream-container { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    background: #1a1a1a; 
+    min-height: 350px;
+}
+
+.video-canvas-wrapper { 
+    flex: 1; 
+    position: relative; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    background: #000;
+    overflow: hidden;
+}
+
+#video, #canvas { 
+    max-width: 100%; 
+    max-height: 100%; 
+    object-fit: contain; 
+}
+
+.video-overlay-date { 
+    position: absolute; 
+    top: 10px; 
+    left: 10px; 
+    color: white; 
+    font-family: monospace; 
+    font-size: clamp(12px, 2vw, 18px);
+    text-shadow: 2px 2px #000; 
+    z-index: 10;
+}
+
+.nvr-controls { 
+    background: #222; 
+    display: flex; 
+    flex-wrap: wrap;
+    align-items: center; 
+    padding: 10px; 
+    border-top: 1px solid var(--panel-border); 
+    justify-content: center;
+    gap: 15px;
+}
+
+.btn-group, .analysis-group { display: flex; align-items: center; gap: 10px; }
+
+input[type="text"], input[type="number"], input[type="date"], select {
+    background: #333;
+    color: white;
+    border: 1px solid #444;
+    padding: 8px;
+    border-radius: 4px;
+    outline: none;
+}
+
+button {
+    background: #444;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover { background: #555; }
+.btn-primary { background: var(--accent-yellow); color: black; font-weight: bold; }
+.btn-primary:hover { background: #e6b800; }
+
+.nvr-sidebar { 
+    width: 100%;
+    background: #111; 
+    border-top: 1px solid var(--panel-border); 
+    display: flex; 
+    flex-direction: column; 
+    height: 300px;
+}
+
+.sidebar-label { padding: 10px; background: #222; font-size: 13px; font-weight: bold; }
+.history-list { flex: 1; overflow-y: auto; padding: 10px; }
+
+.plate-history-card {
+    background: #222;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.plate-history-card:hover { background: #2a2a2a; }
+
+.plate-thumb { width: 80px; height: 40px; object-fit: cover; border: 1px solid #444; }
+.plate-meta { flex: 1; }
+.plate-number-text { display: block; font-weight: bold; color: var(--accent-yellow); }
+.conf-badge { font-size: 10px; background: #444; padding: 2px 4px; border-radius: 3px; }
+
+/* CONFIG SECTION */
+.config-container, .search-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+    background: #1a1a1a;
+}
+
+.config-panel, .search-panel {
+    width: 100%;
+    max-width: 600px;
+    background: #222;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 30px;
+}
+
+.section-title {
+    color: var(--accent-yellow);
+    font-size: 20px;
+    margin: 0 0 20px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+}
+
+.config-group {
+    margin-bottom: 20px;
+}
+
+.config-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #aaa;
+    font-size: 14px;
+}
+
+.config-input {
+    width: 100%;
+    background: #333;
+    color: white;
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 4px;
+    outline: none;
+    font-size: 14px;
+}
+
+.config-input:focus {
+    border-color: var(--accent-yellow);
+}
+
+.config-slider {
+    width: 80%;
+    margin-right: 10px;
+}
+
+.config-value {
+    color: var(--accent-yellow);
+    font-weight: bold;
+}
+
+.config-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #444;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--accent-yellow);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+/* RECORD SECTION */
+.record-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+    background: #1a1a1a;
+}
+
+.record-header {
+    margin-bottom: 20px;
+}
+
+.record-stats {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 15px 20px;
+    flex: 1;
+    min-width: 150px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--accent-yellow);
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
+}
+
+.record-table-wrapper {
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.record-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.record-table thead {
+    background: #333;
+}
+
+.record-table th {
+    padding: 12px;
+    text-align: left;
+    color: #aaa;
+    font-weight: normal;
+    font-size: 13px;
+    border-bottom: 1px solid #444;
+}
+
+.record-table td {
+    padding: 12px;
+    border-bottom: 1px solid #333;
+    font-size: 14px;
+}
+
+.record-table tbody tr:hover {
+    background: #2a2a2a;
+}
+
+.plate-text {
+    color: var(--accent-yellow);
+    font-weight: bold;
+}
+
+.conf-badge-high {
+    background: #28a745;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.conf-badge-med {
+    background: #ffc107;
+    color: black;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.btn-small {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+/* SEARCH SECTION */
+.search-panel {
+    max-width: 700px;
+}
+
+.search-form {
+    margin-bottom: 30px;
+}
+
+.date-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-results {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #333;
+}
+
+.no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+}
+
+@media (min-width: 1024px) {
+    #live-section.active {
+        flex-direction: row !important;
+    }
+
+    .nvr-sidebar { 
+        width: 350px; 
+        height: 100%; 
+        border-top: none; 
+        border-left: 1px solid var(--panel-border); 
+    }
+
+    .record-stats {
+        flex-wrap: nowrap;
+    }
+}
+    </style>
+</head>
+<body class="nvr-theme">
+
+<header class="nvr-header">
+    <div class="brand">webcam</div>
+    <nav class="nvr-nav">
+        <button class="nav-btn active" data-target="live-section">Live</button>
+        <button class="nav-btn" data-target="config-section">Config</button>
+        <button class="nav-btn" data-target="search-section">Search</button>
+    </nav>
+</header>
+
+<main class="nvr-main">
+    <!-- LIVE SECTION -->
+    <section id="live-section" class="tab-content active">
+        <div class="stream-container">
+            <div class="video-canvas-wrapper">
+                <img id="video" alt="live stream" style="max-width:100%;max-height:100%;object-fit:contain;">
+                <video id="webcamVideo" autoplay muted style="display:none;max-width:100%;max-height:100%;object-fit:contain;"></video>
+                <canvas id="canvas"></canvas>
+                
+                <div class="video-overlay-date" id="liveClock">28/01/2026 18:14:10</div>
+            </div>
+
+            <div class="nvr-controls">
+                <div class="btn-group">
+                    <button id="startCamBtn" title="Start"><i class="fas fa-play"></i></button>
+                    
+                    <input type="text" id="rtspUrl" placeholder="Stream URL or leave empty for Cam" style="width: 200px;">
+                    
+                    <button id="captureBtn" title="Capture"><i class="fas fa-camera"></i></button>
+                    <button id="closeCamBtn" title="Stop"><i class="fas fa-stop"></i></button>
+                </div>
+                
+                <div class="analysis-group">
+                    <input type="file" id="uploadInput" hidden>
+                    <button onclick="document.getElementById('uploadInput').click()"><i class="fas fa-upload"></i> Upload</button>
+                    <button id="analyzePlatesBtn" class="btn-primary">Analyze Plates</button>
+                </div>
+            </div>
+        </div>
+
+        <aside class="nvr-sidebar">
+            <div class="sidebar-label">Detection History</div>
+            <div id="plateList" class="history-list"></div> 
+        </aside>
+    </section>
+
+    <!-- CONFIG SECTION -->
+    <section id="config-section" class="tab-content">
+    <div class="config-container">
+        <div class="config-panel">
+            <h2 class="section-title"><i class="fas fa-server"></i> System Services Status</h2>
+            
+            <div class="config-group" style="display: flex; justify-content: space-between; align-items: center; background: #333; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
+                <span><i class="fas fa-camera"></i> Camera Feed</span>
+                <span class="conf-badge-high" id="camStatus">ONLINE</span>
+            </div>
+
+            <div class="config-group" style="display: flex; justify-content: space-between; align-items: center; background: #333; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
+                <span><i class="fas fa-microchip"></i> ANPR Engine</span>
+                <span class="conf-badge-high" style="background: #28a745;">RUNNING</span>
+            </div>
+
+            <div class="config-group" style="display: flex; justify-content: space-between; align-items: center; background: #333; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
+                <span><i class="fas fa-database"></i> Database (CSV)</span>
+                <span class="conf-badge-high" style="background: #007bff;">READY</span>
+            </div>
+
+            <h2 class="section-title" style="margin-top: 30px;">System Health</h2>
+            <div class="config-group">
+                <label class="config-label">CPU Usage</label>
+                <div style="width: 100%; background: #444; height: 10px; border-radius: 5px;">
+                    <div style="width: 45%; background: var(--accent-yellow); height: 100%; border-radius: 5px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <!-- DATA RECORD SECTION -->
+    <!--<section id="record-section" class="tab-content">
+        <div class="record-container">
+            <div class="record-header">
+                <h2 class="section-title">Plate Detection Records</h2>
+                <div class="record-stats">
+                    <div class="stat-card">
+                        <div class="stat-value">1,247</div>
+                        <div class="stat-label">Total Detections</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">89</div>
+                        <div class="stat-label">Today</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">23</div>
+                        <div class="stat-label">This Hour</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="record-table-wrapper">
+                <table class="record-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Plate Number</th>
+                            <th>Confidence</th>
+                            <th>Image</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2026-02-01 14:23:45</td>
+                            <td class="plate-text">ABC-1234</td>
+                            <td><span class="conf-badge-high">95%</span></td>
+                            <td><button class="btn-small"><i class="fas fa-image"></i></button></td>
+                            <td><button class="btn-small"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                        <tr>
+                            <td>2026-02-01 14:21:12</td>
+                            <td class="plate-text">XYZ-9876</td>
+                            <td><span class="conf-badge-high">87%</span></td>
+                            <td><button class="btn-small"><i class="fas fa-image"></i></button></td>
+                            <td><button class="btn-small"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                        <tr>
+                            <td>2026-02-01 14:18:33</td>
+                            <td class="plate-text">DEF-5678</td>
+                            <td><span class="conf-badge-med">72%</span></td>
+                            <td><button class="btn-small"><i class="fas fa-image"></i></button></td>
+                            <td><button class="btn-small"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>-->
+
+    <!-- SEARCH SECTION -->
+    <section id="search-section" class="tab-content">
+    <div class="search-container">
+        <div class="search-panel">
+            <h2 class="section-title"><i class="fas fa-filter"></i> Search Log Records</h2>
+            
+            <div class="search-form">
+                <div class="config-group">
+                    <label class="config-label">Filter by Date & Time</label>
+                    <div class="date-range" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="datetime-local" id="searchStart" class="config-input" style="flex: 1; min-width: 200px;">
+                        <span style="align-self: center;">to</span>
+                        <input type="datetime-local" id="searchEnd" class="config-input" style="flex: 1; min-width: 200px;">
+                    </div>
+                </div>
+
+                <div class="config-group">
+                    <label class="config-label">Plate Number (Optional)</label>
+                    <input type="text" id="searchPlate" class="config-input" placeholder="e.g. ABC-1234">
+                </div>
+
+                <div class="config-actions">
+                    <button class="btn-primary" id="executeSearchBtn"><i class="fas fa-search"></i> Search CSV Records</button>
+                    <button id="exportCsvBtn"><i class="fas fa-file-export"></i> Export Results</button>
+                </div>
+            </div>
+
+            <div class="record-table-wrapper" style="margin-top: 20px;">
+                
+                   <table class="record-table">
+                        <thead>
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>Plate</th>
+                                <th>Snapshot</th> </tr>
+                        </thead>
+                        <tbody id="searchResultsBody">
+                            </tbody>
+                    </table>
+            </div>
+        </div>
+    </div>
+</section>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const plateList = document.getElementById("plateList");
+    const uploadInput = document.getElementById("uploadInput");
+    const rtspInput = document.getElementById("rtspUrl"); 
+
+    let stream = null;
+    let backgroundInterval = null;
+    let isAnalyzing = false;
+    let currentImage = null;
+    let isLiveActive = false;
+
+    // TAB SWITCHING
+    document.querySelectorAll('.nav-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const targetId = button.getAttribute('data-target');
+            
+            // Remove active from all
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            // Add active to clicked
+            button.classList.add('active');
+            document.getElementById(targetId).classList.add('active');
+        });
+    });
+
+    // Config sliders
+    document.querySelectorAll('.config-slider').forEach(slider => {
+        slider.addEventListener('input', (e) => {
+            const valueDisplay = e.target.nextElementSibling;
+            if (valueDisplay && valueDisplay.classList.contains('config-value')) {
+                valueDisplay.textContent = e.target.value + '%';
+            }
+        });
+    });
+
+    // CLOCK
+    function updateClock() {
+        const clockEl = document.getElementById("liveClock");
+        if (clockEl) {
+            const now = new Date();
+            clockEl.innerText = `${now.toLocaleDateString('en-GB')} ${now.toLocaleTimeString('en-GB')}`;
+        }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // START CAMERA
+    document.getElementById("startCamBtn").onclick = async () => {
+        const urlValue = rtspInput ? rtspInput.value.trim() : "";
+        isLiveActive = true;
+
+        if (urlValue === "") {
+            // Local webcam
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+                });
+                const wv = document.getElementById("webcamVideo");
+                wv.srcObject = stream;
+                wv.style.display = "block";
+                document.getElementById("video").style.display = "none";
+                canvas.style.display = "none";
+                initAutoLoop();
+            } catch (err) {
+                isLiveActive = false;
+                alert("Webcam failed: " + err.message);
+            }
+        } else {
+            // RTSP — the backend has no /anpr/connect endpoint, so we go
+            // straight to the MJPEG stream endpoint and pass the url through.
+            // NOTE: an <img> tag (not <video>) is required here because the
+            // backend sends a multipart/x-mixed-replace MJPEG stream, which
+            // <video> cannot decode — only <img src="..."> can.
+            stopEverything(true);
+            try {
+                const wv = document.getElementById("webcamVideo");
+                if (wv) { wv.style.display = "none"; }
+                video.style.display = "block";
+                canvas.style.display = "none";
+
+                video.onerror = () => {
+                    isLiveActive = false;
+                    alert("Stream connection failed. Check the RTSP URL and that the backend can reach it.");
+                };
+
+                video.src = `/anpr/stream?url=${encodeURIComponent(urlValue)}&t=${Date.now()}`;
+                initAutoLoop();
+            } catch (err) {
+                isLiveActive = false;
+                alert("Stream connection failed: " + err.message);
+            }
+        }
+    };
+
+    // CAPTURE
+    document.getElementById("captureBtn").onclick = () => {
+        if (!isLiveActive) return alert("Start stream first!");
+        
+        currentImage = captureToDataURL(0.95);
+        
+        canvas.width = video.videoWidth || video.clientWidth;
+        canvas.height = video.videoHeight || video.clientHeight;
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); };
+        img.src = currentImage;
+
+        stopEverything(true);
+        canvas.style.display = "block";
+        video.style.display = "none";
+    };
+
+    // UPLOAD
+    uploadInput.addEventListener("change", e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        stopEverything(isLiveActive); 
+
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                currentImage = canvas.toDataURL("image/jpeg", 0.95);
+                canvas.style.display = "block";
+                video.style.display = "none";
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // ANALYZE
+    document.getElementById("analyzePlatesBtn").onclick = async () => {
+        if (!currentImage) return alert("Please capture or upload an image first!");
+        await runAnalysis(currentImage, true);
+    };
+
+    async function runAnalysis(imageData, isManual) {
+        if (isAnalyzing && !isManual) return;
+        isAnalyzing = true;
+        
+        const btn = document.getElementById("analyzePlatesBtn");
+        if (isManual) btn.innerText = "⏳ Analyzing...";
+
+        try {
+            const blob = await (await fetch(imageData)).blob();
+            const formData = new FormData();
+            formData.append("image", blob, "frame.jpg");
+
+            const res = await fetch('/anpr/analyze-plates', { method: "POST", body: formData });
+            const result = await res.json();
+
+            if (result.plates) {
+                displayResults(result.plates, result.annotated_image_url);
+            }
+
+            if (isManual && isLiveActive) {
+                setTimeout(() => { document.getElementById("startCamBtn").click(); }, 2000);
+            }
+        } catch (e) { console.error("Analysis Error:", e); }
+        finally {
+            isAnalyzing = false;
+            if (isManual) btn.innerText = "Analyze Plates";
+        }
+    }
+
+    function captureToDataURL(quality) {
+        const wv  = document.getElementById("webcamVideo");
+        const src = (wv && wv.style.display !== "none" && wv.srcObject) ? wv : video;
+        const buffer = document.createElement("canvas");
+        buffer.width  = src.videoWidth  || src.naturalWidth  || src.clientWidth;
+        buffer.height = src.videoHeight || src.naturalHeight || src.clientHeight;
+        buffer.getContext("2d").drawImage(src, 0, 0, buffer.width, buffer.height);
+        return buffer.toDataURL("image/jpeg", quality);
+    }
+
+    function stopEverything(keepLiveState) {
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+        const wv = document.getElementById("webcamVideo");
+        if (wv) { wv.srcObject = null; wv.style.display = "none"; }
+        video.src = "";
+        if (backgroundInterval) { clearInterval(backgroundInterval); backgroundInterval = null; }
+        isLiveActive = keepLiveState; 
+    }
+
+    document.getElementById("closeCamBtn").onclick = () => {
+        stopEverything(false);
+        video.style.display = "none";
+        canvas.style.display = "none";
+    };
+
+    function initAutoLoop() {
+        if (backgroundInterval) clearInterval(backgroundInterval);
+        backgroundInterval = setInterval(async () => {
+            if (!isAnalyzing && isLiveActive && !video.paused) {
+                const frame = captureToDataURL(0.7);
+                await runAnalysis(frame, false);
+            }
+        }, 2000);
+    }
+
+    function displayResults(plates, fullUrl) {
+        plates.forEach(p => {
+            const item = document.createElement("div");
+            item.className = "plate-item";
+            item.onclick = () => { if(fullUrl) window.open(fullUrl, '_blank'); };
+            item.innerHTML = `
+                <div class="plate-history-card">
+                    <img src="${p.crop_url}" class="plate-thumb">
+                    <div class="plate-meta">
+                        <span class="plate-number-text">${p.text}</span>
+                        <span class="conf-badge">${(p.confidence * 100).toFixed(0)}%</span>
+                    </div>
+                </div>`;
+            plateList.prepend(item);
+        });
+    }
+    document.getElementById("executeSearchBtn").onclick = async () => {
+    // Get the ID of the start/end inputs from your HTML
+    const start = document.getElementById("searchStart").value;
+    const end = document.getElementById("searchEnd").value;
+    const plate = document.getElementById("searchPlate").value;
+
+    const tbody = document.getElementById("searchResultsBody");
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Searching...</td></tr>';
+
+    try {
+        // Fetch data from the backend route we added earlier
+        const response = await fetch(`/anpr/search-csv?start=${start}&end=${end}&plate=${plate}`);
+        const data = await response.json();
+
+        tbody.innerHTML = ""; 
+        if (!data.results || data.results.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No records found.</td></tr>';
+        } else {
+            data.results.forEach(row => {
+                // Use row.image_url which corresponds to the CSV 'Image_URL' column
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${row.timestamp}</td>
+                        <td class="plate-text">${row.plate}</td>
+                        <td>
+                            <button onclick="window.open('${row.image_url}', '_blank')" class="btn-small">
+                                <i class="fas fa-image"></i> View Image
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+        }
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: red;">Error loading CSV data.</td></tr>';
+    }
+};});
+</script>
+</body>
+</html>
