@@ -1,22 +1,56 @@
 # ================== app/services/plate_service.py ==================
 import cv2
 import re
+import threading
 import numpy as np
-from ultralytics import YOLO
-from paddleocr import PaddleOCR
-from app.services.plate_lprnet import recognize_plate_lprnet
-import os
-import datetime
-import pandas as pd
+from fastapi import HTTPException
 
-# ---------------- LOAD MODELS ----------------
-plate_model = YOLO("app/models/plate.pt")
+# NOTE: heavy libraries (ultralytics/torch, paddleocr, LPRNet) are imported
+# inside load_models() so that importing this module is instant and uvicorn
+# can open its port right away.
 
-ocr = PaddleOCR(
-    use_angle_cls=True,
-    lang="en",
-    show_log=False
-)
+# ---------------- LAZY MODEL LOADING ----------------
+plate_model = None
+ocr = None
+recognize_plate_lprnet = None
+
+_state = {"ready": False, "error": None}
+
+
+def load_models():
+    """Load every heavy model. Runs once, in a background thread."""
+    global plate_model, ocr, recognize_plate_lprnet
+    try:
+        print("Loading models in background...")
+        from ultralytics import YOLO
+        from paddleocr import PaddleOCR
+        # importing plate_lprnet loads the LPRNet weights (module-level code there)
+        from app.services.plate_lprnet import recognize_plate_lprnet as _lpr
+
+        plate_model = YOLO("app/models/plate.pt")
+        ocr = PaddleOCR(
+            use_angle_cls=True,
+            lang="en",
+            show_log=False
+        )
+        recognize_plate_lprnet = _lpr
+        _state["ready"] = True
+        print("✓ All models loaded, service ready")
+    except Exception as e:
+        _state["error"] = repr(e)
+        print(f"✗ Model loading failed: {e}")
+
+
+def start_loading():
+    threading.Thread(target=load_models, daemon=True, name="model-loader").start()
+
+
+def models_ready():
+    return _state["ready"]
+
+
+def models_status():
+    return dict(_state)
 
 # ---------------- CONSTANTS ----------------
 INDIAN_STATE_CODES = {
@@ -332,6 +366,11 @@ def analyze_plate(img):
             - confidence: OCR confidence
             - valid: whether format is valid
     """
+    if not _state["ready"]:
+        detail = ("Models failed to load: " + _state["error"]) if _state["error"] \
+                 else "Models are still loading, retry in a minute"
+        raise HTTPException(status_code=503, detail=detail)
+
     if img is None or img.size == 0:
         return []
 
@@ -372,6 +411,3 @@ def analyze_plate(img):
             print(f"⚠ Error processing plate crop: {e}")
 
     return results
-
-
-
